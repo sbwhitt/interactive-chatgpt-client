@@ -13,6 +13,7 @@ class chat:
     self.prompt = ''
     self.system_prompt = 'You are a friendly conversationalist'
     self.msgs = [{'role':'system', 'content':self.system_prompt}]
+    self.history = self.msgs
     res = openai.ChatCompletion.create(
       model='gpt-3.5-turbo',
       messages=self.msgs
@@ -31,11 +32,23 @@ class chat:
         fout.write(m['content'])
         fout.write('\n')
   
+  def updateSystemPrompt(self, prompt) -> bool:
+    if len(prompt.split(' ')) < 2:
+      return False
+    p = prompt[prompt.find(' ')+1:]
+    if p:
+      self.system_prompt = p
+      self.msgs.append({'role': 'system', 'content': p})
+      print('System prompt successfully added')
+      return True
+    return False
+  
   def processPrompt(self, prompt) -> bool:
     if prompt == ':q':
         return False
     elif prompt.split(' ')[0] == ':system':
-      self.system_prompt = prompt.split(' ')[1]
+      if not self.updateSystemPrompt(prompt):
+        print('Invalid system prompt')
       print('\n')
       return True
     elif prompt == ':debug' or prompt == ':d':
@@ -46,6 +59,21 @@ class chat:
       self.save = not self.save
       print('Saving on' if self.save else 'Saving off')
       return True
+    else:
+      print('Command not recognized\n\n')
+      return True
+  
+  def sendChat(self, prompt):
+    self.msgs.append({"role":"user", "content":prompt})
+    print('\n')
+    res = openai.ChatCompletion.create(
+      model="gpt-3.5-turbo",
+      messages=self.msgs
+    )
+    self.history.append(res['choices'][0]['message']['content'])
+    self.token_amnts.append(res['usage']['total_tokens'])
+
+    return res
 
   def run(self) -> bool:
     try:
@@ -60,16 +88,7 @@ class chat:
       if prompt[0] == ':':
         return self.processPrompt(prompt)
       
-      self.msgs.append({"role":"user", "content":prompt})
-      print('\n')
-
-      res = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=self.msgs
-      )
-
-      chat_res = res['choices'][0]['message']['content']
-      self.token_amnts.append(res['usage']['total_tokens'])
+      chat_res = self.sendChat(prompt)['choices'][0]['message']['content']
 
       # ensure the chat call doesn't exceed max tokens
       while sum(self.token_amnts) > 2048:
