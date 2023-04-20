@@ -6,6 +6,8 @@ openai.organization = config.ORG_ID
 openai.api_key = config.API_KEY
 
 def saveConvo():
+  if len(msgs) == 1:
+    return
   d = datetime.now()
   d_str = str(datetime.date(d)) + '_' + str(datetime.time(d).hour) + '-' + str(datetime.time(d).minute)
   with open("convos/convo_" + d_str + '.txt', "w") as fout:
@@ -30,21 +32,29 @@ def run():
     )
 
     chat_res = res['choices'][0]['message']['content']
-    msgs.append({"role":"assistant", "content":chat_res})
+    token_amnts.append(res['usage']['total_tokens'])
 
+    # ensure the chat call doesn't exceed max tokens
+    while sum(token_amnts) > 2048:
+      token_amnts.pop(0)
+      msgs.pop(0)
+
+    msgs.append({'role':'assistant', 'content':chat_res})
     print(chat_res + "\n")
+
     return True
 
   except KeyboardInterrupt:
     saveConvo()
 
 if __name__ == "__main__":
-  prompt = ""
-  msgs = [{"role":"system", "content":"You are a friendly conversationalist"},]
+  prompt = ''
+  msgs = [{'role':'system', 'content':'You are a friendly conversationalist'}]
   res = openai.ChatCompletion.create(
-      model="gpt-3.5-turbo",
+      model='gpt-3.5-turbo',
       messages=msgs
     )
+  token_amnts = [res['usage']['total_tokens']]
 
   while run():
     pass
