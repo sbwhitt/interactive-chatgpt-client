@@ -10,7 +10,8 @@ class chat:
 
     self.debug = debug
     self.prompt = ''
-    self.msgs = [{'role':'system', 'content':'You are a friendly conversationalist'}]
+    self.system_prompt = 'You are a friendly conversationalist'
+    self.msgs = [{'role':'system', 'content':self.system_prompt}]
     res = openai.ChatCompletion.create(
       model='gpt-3.5-turbo',
       messages=self.msgs
@@ -33,10 +34,15 @@ class chat:
     try:
       if self.debug:
         print('DEBUG> tokens: ' + str(sum(self.token_amnts)))
+        print('DEBUG> system: ' + self.system_prompt)
 
       prompt = input(">")
       if prompt == 'q':
         return False
+      elif prompt.split(':')[0] == 'system':
+        self.system_prompt = prompt.split(':')[1]
+        print('\n')
+        return True
       
       self.msgs.append({"role":"user", "content":prompt})
       print("\n")
