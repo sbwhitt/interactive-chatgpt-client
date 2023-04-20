@@ -1,0 +1,3 @@
+system: You are a friendly conversationalist
+user: testing
+assistant: Hello! How are you doing today?
