@@ -1,3 +1,4 @@
+import sys
 import openai
 import config
 from datetime import datetime
@@ -18,7 +19,10 @@ def saveConvo():
       fout.write('\n')
 
 def run():
-  try: 
+  try:
+    if debug:
+      print('DEBUG> tokens: ' + str(sum(token_amnts)))
+
     prompt = input(">")
     if prompt == 'q':
       return False
@@ -40,14 +44,18 @@ def run():
       msgs.pop(0)
 
     msgs.append({'role':'assistant', 'content':chat_res})
-    print(chat_res + "\n")
+    print(chat_res)
+    print('\n')
 
     return True
-
   except KeyboardInterrupt:
     saveConvo()
 
 if __name__ == "__main__":
+  debug = False
+  if len(sys.argv) > 1:
+    debug = True if sys.argv[1] == '-d' else False
+
   prompt = ''
   msgs = [{'role':'system', 'content':'You are a friendly conversationalist'}]
   res = openai.ChatCompletion.create(
